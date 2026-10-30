@@ -9,7 +9,7 @@
       "Read",
       "Edit",
       "Write",
-      "Bash(uv run pytest:*)",
+      "Bash(uv run:*)",
       "Bash(uv sync:*)",
       "Bash(npm install)",
       "Bash(npm run build)",
