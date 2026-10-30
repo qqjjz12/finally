@@ -105,6 +105,7 @@ class MassiveDataSource(MarketDataSource):
                         ticker=snap.ticker,
                         price=price,
                         timestamp=timestamp,
+                        reference_price=self._previous_close(snap),
                     )
                     processed += 1
                 except (AttributeError, TypeError) as e:
@@ -119,6 +120,14 @@ class MassiveDataSource(MarketDataSource):
             logger.error("Massive poll failed: %s", e)
             # Don't re-raise — the loop will retry on the next interval.
             # Common failures: 401 (bad key), 429 (rate limit), network errors.
+
+    @staticmethod
+    def _previous_close(snap) -> float | None:
+        """Previous day's close from the snapshot, or None if absent/invalid."""
+        close = getattr(getattr(snap, "prev_day", None), "close", None)
+        if isinstance(close, (int, float)) and not isinstance(close, bool) and close > 0:
+            return float(close)
+        return None
 
     def _fetch_snapshots(self) -> list:
         """Synchronous call to the Massive REST API. Runs in a thread."""

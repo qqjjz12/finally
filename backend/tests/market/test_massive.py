@@ -199,3 +199,29 @@ class TestMassiveDataSource:
         assert cache.get_price("AAPL") == 190.50
 
         await source.stop()
+
+
+@pytest.mark.asyncio
+class TestMassiveReferencePrice:
+    async def _poll(self, snap):
+        cache = PriceCache()
+        source = MassiveDataSource(api_key="k", price_cache=cache, poll_interval=60.0)
+        source._tickers = ["AAPL"]
+        source._client = MagicMock()
+        with patch.object(source, "_fetch_snapshots", return_value=[snap]):
+            await source._poll_once()
+        return cache
+
+    async def test_reference_is_previous_close(self):
+        snap = _make_snapshot("AAPL", 190.50, 1707580800000)
+        snap.prev_day = MagicMock()
+        snap.prev_day.close = 189.0
+        cache = await self._poll(snap)
+        assert cache.get("AAPL").reference_price == 189.0
+
+    async def test_missing_prev_day_gives_none(self):
+        snap = _make_snapshot("AAPL", 190.50, 1707580800000)
+        snap.prev_day = None
+        cache = await self._poll(snap)
+        assert cache.get_price("AAPL") == 190.50
+        assert cache.get("AAPL").reference_price is None

@@ -14,6 +14,15 @@ class PriceUpdate:
     price: float
     previous_price: float
     timestamp: float = field(default_factory=time.time)  # Unix seconds
+    # Baseline for daily change %: simulator seed price or Massive previous close
+    reference_price: float | None = None
+
+    @property
+    def daily_change_percent(self) -> float | None:
+        """Percentage change vs. reference_price, or None if no reference is known."""
+        if not self.reference_price:
+            return None
+        return round((self.price - self.reference_price) / self.reference_price * 100, 4)
 
     @property
     def change(self) -> float:
@@ -42,7 +51,9 @@ class PriceUpdate:
             "ticker": self.ticker,
             "price": self.price,
             "previous_price": self.previous_price,
+            "reference_price": self.reference_price,
             "timestamp": self.timestamp,
+            "daily_change_percent": self.daily_change_percent,
             "change": self.change,
             "change_percent": self.change_percent,
             "direction": self.direction,

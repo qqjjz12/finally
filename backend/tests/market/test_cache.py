@@ -101,3 +101,31 @@ class TestPriceCache:
         cache = PriceCache()
         update = cache.update("AAPL", 190.12345)
         assert update.price == 190.12
+
+
+class TestCacheReferencePrice:
+    def test_reference_price_stored(self):
+        cache = PriceCache()
+        update = cache.update("AAPL", 190.50, reference_price=189.0)
+        assert update.reference_price == 189.0
+        assert cache.get("AAPL").reference_price == 189.0
+
+    def test_reference_price_defaults_none(self):
+        cache = PriceCache()
+        assert cache.update("AAPL", 190.50).reference_price is None
+
+    def test_reference_price_carried_forward(self):
+        cache = PriceCache()
+        cache.update("AAPL", 190.0, reference_price=189.0)
+        assert cache.update("AAPL", 191.0).reference_price == 189.0
+
+    def test_reference_price_can_be_replaced(self):
+        cache = PriceCache()
+        cache.update("AAPL", 190.0, reference_price=189.0)
+        assert cache.update("AAPL", 191.0, reference_price=185.0).reference_price == 185.0
+
+    def test_reference_price_cleared_on_remove(self):
+        cache = PriceCache()
+        cache.update("AAPL", 190.0, reference_price=189.0)
+        cache.remove("AAPL")
+        assert cache.update("AAPL", 191.0).reference_price is None

@@ -59,6 +59,8 @@ class GBMSimulator:
         # Per-ticker state
         self._tickers: list[str] = []
         self._prices: dict[str, float] = {}
+        # Fixed per-ticker start price, used as the daily-change reference
+        self._references: dict[str, float] = {}
         self._params: dict[str, dict[str, float]] = {}
 
         # Cholesky decomposition of the correlation matrix (for correlated moves)
@@ -130,12 +132,17 @@ class GBMSimulator:
             return
         self._tickers.remove(ticker)
         del self._prices[ticker]
+        del self._references[ticker]
         del self._params[ticker]
         self._rebuild_cholesky()
 
     def get_price(self, ticker: str) -> float | None:
         """Current price for a ticker, or None if not tracked."""
         return self._prices.get(ticker)
+
+    def get_reference_price(self, ticker: str) -> float | None:
+        """Reference price for daily change % (the starting price), or None if not tracked."""
+        return self._references.get(ticker)
 
     def get_tickers(self) -> list[str]:
         """Return the list of currently tracked tickers."""
@@ -148,7 +155,9 @@ class GBMSimulator:
         if ticker in self._prices:
             return
         self._tickers.append(ticker)
-        self._prices[ticker] = SEED_PRICES.get(ticker, random.uniform(50.0, 300.0))
+        start_price = SEED_PRICES.get(ticker, random.uniform(50.0, 300.0))
+        self._prices[ticker] = start_price
+        self._references[ticker] = start_price
         self._params[ticker] = TICKER_PARAMS.get(ticker, dict(DEFAULT_PARAMS))
 
     def _rebuild_cholesky(self) -> None:
@@ -225,8 +234,12 @@ class SimulatorDataSource(MarketDataSource):
         for ticker in tickers:
             price = self._sim.get_price(ticker)
             if price is not None:
-                self._cache.update(ticker=ticker, price=price)
-        self._task = asyncio.create_task(self._run_loop(), name="simulator-loop")
+                self._cache.update(
+                    ticker=ticker,
+                    price=price,
+                    reference_price=self._sim.get_reference_price(ticker),
+                )
+        self._task =asyncio.create_task(self._run_loop(), name="simulator-loop")
         logger.info("Simulator started with %d tickers", len(tickers))
 
     async def stop(self) -> None:
@@ -245,7 +258,11 @@ class SimulatorDataSource(MarketDataSource):
             # Seed cache immediately so the ticker has a price right away
             price = self._sim.get_price(ticker)
             if price is not None:
-                self._cache.update(ticker=ticker, price=price)
+                self._cache.update(
+                    ticker=ticker,
+                    price=price,
+                    reference_price=self._sim.get_reference_price(ticker),
+                )
             logger.info("Simulator: added ticker %s", ticker)
 
     async def remove_ticker(self, ticker: str) -> None:

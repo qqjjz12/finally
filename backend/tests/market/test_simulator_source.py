@@ -136,3 +136,26 @@ class TestSimulatorDataSource:
         # Just verify it starts and stops cleanly
         await asyncio.sleep(0.2)
         await source.stop()
+
+
+@pytest.mark.asyncio
+class TestSimulatorReferencePrice:
+    async def test_reference_is_seed_price_and_fixed(self):
+        from app.market.seed_prices import SEED_PRICES
+
+        cache = PriceCache()
+        source = SimulatorDataSource(price_cache=cache, update_interval=0.05)
+        await source.start(["AAPL"])
+        assert cache.get("AAPL").reference_price == SEED_PRICES["AAPL"]
+        await asyncio.sleep(0.2)
+        assert cache.get("AAPL").reference_price == SEED_PRICES["AAPL"]
+        await source.stop()
+
+    async def test_unseeded_ticker_reference_in_range(self):
+        cache = PriceCache()
+        source = SimulatorDataSource(price_cache=cache, update_interval=0.5)
+        await source.start(["AAPL"])
+        await source.add_ticker("PYPL")
+        ref = cache.get("PYPL").reference_price
+        assert ref is not None and 50.0 <= ref <= 300.0
+        await source.stop()
