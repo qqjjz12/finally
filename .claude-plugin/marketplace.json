@@ -1,0 +1,18 @@
+{
+    "name": "joe-tools",
+    "owner": {
+        "name": "Joe Chavis",
+        "email": "qqjjz12@gmail.com"
+    },
+    "plugins": [
+        {
+            "name": "independent-reviewer",
+            "source": "./independent-reviewer",
+            "description": "Carry out an independent review of all changes since last commit",
+            "version": "1.0.0",
+            "author": {
+                "name": "Joe Chavis"
+            }
+        }
+    ]
+}
