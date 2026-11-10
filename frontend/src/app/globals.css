@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body { height: 100%; }
+body { background: #0d1117; color: #e6edf3; font-size: 13px; }
+
+.flash-up { background-color: rgba(63, 185, 80, 0.45); }
+.flash-down { background-color: rgba(248, 81, 73, 0.45); }
+.price-cell { transition: background-color 500ms ease-out; border-radius: 3px; padding: 1px 4px; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
